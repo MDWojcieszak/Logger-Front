@@ -21,6 +21,7 @@ const fallSeasonPalette = {
   gray03: '#1f222a',
   gray04: '#14171c',
   gray05: '#0B0C0D',
+  gray06: '#242424',
   mainGreen: '#359E7A',
   lightGreen: '#8CCF77',
   yellow: '#F9F871',
