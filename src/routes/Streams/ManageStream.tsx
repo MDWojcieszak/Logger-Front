@@ -63,9 +63,31 @@ export const ManageStream = () => {
       }
     };
     const keyReset = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        if (pressed > 2) setAutoScroll((s) => !s);
-        pressed = 0;
+      switch (e.code) {
+        case 'Space':
+          if (pressed > 2) setAutoScroll((s) => !s);
+          pressed = 0;
+          break;
+        case 'Digit1':
+          handleDisableLogLevel(LogLevel.INFO);
+          break;
+        case 'Digit2':
+          handleDisableLogLevel(LogLevel.DEBUG);
+          break;
+        case 'Digit3':
+          handleDisableLogLevel(LogLevel.SUCCESS);
+          break;
+        case 'Digit4':
+          handleDisableLogLevel(LogLevel.WARNING);
+          break;
+        case 'Digit5':
+          handleDisableLogLevel(LogLevel.ERROR);
+          break;
+        case 'Enter':
+          setVerticalMenuExpanded((m) => !m);
+          break;
+        case 'KeyV':
+          setHideItems((h) => !h);
       }
     };
     document.addEventListener('keydown', keyHandler);
@@ -159,6 +181,9 @@ const useStyles = mkUseStyles((t) => ({
     width: '100%',
   },
   handle: {
+    paddingTop: t.spacing.s,
+    paddingBottom: t.spacing.s,
+    paddingLeft: t.spacing.s,
     cursor: 'pointer',
   },
   headerContainer: {
