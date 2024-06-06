@@ -29,6 +29,7 @@ export const Toggle = (p: ToggleProps) => {
 const useStyles = mkUseStyles((t) => ({
   container: {
     width: '40px',
+    minWidth: '40px',
     height: '20px',
     backgroundColor: t.colors.blue,
     flexDirection: 'row',
