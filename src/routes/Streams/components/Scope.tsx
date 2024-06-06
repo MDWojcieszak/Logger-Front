@@ -4,13 +4,13 @@ type ScopeProps = {
   name: string;
   color: string;
   active: boolean;
-  setEnabled: F1<boolean>;
+  setEnabled: F0;
 };
 export const Scope = (p: ScopeProps) => {
   const styles = useStyles();
   const theme = useTheme();
   const handlePress = () => {
-    p.setEnabled(!p.active);
+    p.setEnabled();
   };
   return (
     <motion.div

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { WebSocketContext } from '~/contexts/WebSocket/WebSocketContext';
 
 export type LogType = {
@@ -12,7 +12,14 @@ export type LogType = {
 export type ScopeType = {
   name?: string;
   color: string;
-  active: boolean;
+};
+
+const logLevelOrder: { [key: string]: number } = {
+  info: 1,
+  debug: 2,
+  success: 3,
+  warn: 4,
+  error: 5,
 };
 
 const useLogStream = (messageType: string) => {
@@ -21,24 +28,44 @@ const useLogStream = (messageType: string) => {
   const [rawLogs, setRawLogs] = useState<LogType[]>();
   const [scopes, setScopes] = useState<ScopeType[]>();
 
-  const handleLog = (log: LogType) => {
-    setRawLogs((prev) => (prev ? [...prev, log] : [log]));
-    if (!log.scope) return;
-    if (!scopes?.find((s) => s.name === log.scope))
-      setScopes((prev) =>
-        prev?.find((s) => s.name === log.scope)
-          ? [...prev]
-          : prev
-            ? [...prev, { active: true, color: log.color, name: log.scope }]
-            : [{ active: true, color: log.color, name: log.scope }],
-      );
-  };
+  const handleLog = useCallback((log: LogType) => {
+    setRawLogs((prevLogs) => {
+      if (!prevLogs) return [log];
+      const newLogs = [...prevLogs];
+      let low = 0,
+        high = newLogs.length;
+      while (low < high) {
+        const mid = Math.floor((low + high) / 2);
+        const existingLog = newLogs[mid];
+        if (log.timestamp < existingLog.timestamp) {
+          high = mid;
+        } else if (log.timestamp > existingLog.timestamp) {
+          low = mid + 1;
+        } else {
+          const logLevel = log.level ? logLevelOrder[log.level] : Infinity;
+          const existingLogLevel = existingLog.level ? logLevelOrder[existingLog.level] : Infinity;
 
-  const handleSetScopeActive = (name: string, isActive: boolean) => {
-    const index = scopes?.findIndex((s) => s.name === name);
-    if (index === -1 || index === undefined) return;
-    setScopes((prev) => prev && prev.map((p) => (p.name === name ? { ...p, active: isActive } : p)));
-  };
+          if (logLevel < existingLogLevel) {
+            high = mid;
+          } else {
+            low = mid + 1;
+          }
+        }
+      }
+
+      newLogs.splice(low, 0, log);
+      return newLogs;
+    });
+
+    if (!log.scope) return;
+
+    setScopes((prevScopes) => {
+      if (!prevScopes) return [{ active: true, color: log.color, name: log.scope }];
+      const scopeExists = prevScopes.find((s) => s.name === log.scope);
+      if (scopeExists) return prevScopes;
+      return [...prevScopes, { active: true, color: log.color, name: log.scope }];
+    });
+  }, []);
 
   useEffect(() => {
     if (!ctx || !ctx.socket) return;
@@ -50,9 +77,8 @@ const useLogStream = (messageType: string) => {
   }, [ctx, ctx?.socket, messageType, handleLog]);
 
   return {
-    logs: rawLogs?.filter((log) => scopes?.find((s) => s.name === log.scope && s.active)),
+    logs: rawLogs,
     scopes,
-    handleSetScopeActive,
     handleClear: () => setRawLogs([]),
   };
 };

@@ -1,12 +1,33 @@
 import { format } from 'date-fns';
+import { useMemo, useState } from 'react';
 import { LogType } from '~/routes/Streams/hooks/useLogStream';
-import { mkUseStyles } from '~/utils/theme';
+import { mkUseStyles, useTheme } from '~/utils/theme';
+import { motion } from 'framer-motion';
+import { FaRegCircleDot } from 'react-icons/fa6';
 
-type LogProps = LogType;
+type LogProps = LogType & { disabled?: boolean; showDisabled?: boolean };
 
-export const LogContainer = ({ timestamp, scope, color, ...p }: LogProps) => {
+export const LogContainer = ({ timestamp, scope, color, disabled = false, ...p }: LogProps) => {
   const styles = useStyles();
-  const fontColor = p.level === 'debug' ? 'gray' : 'white';
+  const theme = useTheme();
+  const [marker, setMarker] = useState(false);
+  const fontColor = useMemo(() => {
+    switch (p.level) {
+      case 'debug':
+        return 'gray';
+      case 'info':
+        return theme.colors.white;
+      case 'warn':
+        return theme.colors.yellow;
+      case 'error':
+        return theme.colors.red;
+      case 'success':
+        return theme.colors.lightGreen;
+      default:
+        return theme.colors.blue;
+    }
+  }, []);
+
   const renderMessage = (message: any[] | undefined) => {
     return (
       <>
@@ -36,12 +57,36 @@ export const LogContainer = ({ timestamp, scope, color, ...p }: LogProps) => {
     );
   };
   return (
-    <div style={styles.container}>
-      <div style={{ color: fontColor, opacity: 0.6 }}>{format(new Date(timestamp), 'HH:mm:ss:SSS')}</div>
+    <motion.div
+      onClick={() => !marker && setMarker(true)}
+      style={styles.container}
+      initial={{ borderColor: '#00000000' }}
+      animate={{
+        opacity: disabled ? 0.05 : 1,
+        borderColor: marker ? theme.colors.red : theme.colors.red + theme.colorOpacity(0),
+      }}
+      whileHover={{ backgroundColor: theme.colors.dark01, transition: { duration: 0.2 } }}
+    >
+      <motion.div
+        style={styles.marker}
+        initial={{ opacity: 0 }}
+        onClick={() => setMarker(false)}
+        animate={{ opacity: marker ? 1 : 0 }}
+      >
+        <FaRegCircleDot
+          size={18}
+          color={theme.colors.red}
+          style={{ backgroundColor: theme.colors.dark01, borderRadius: '50%' }}
+        />
+      </motion.div>
+
+      <div style={{ color: fontColor, opacity: 0.6, fontVariantNumeric: 'tabular-nums' }}>
+        {format(new Date(timestamp), 'HH:mm:ss : SSS')}
+      </div>
       <div style={{ ...styles.scopeContainer, backgroundColor: color }}>{scope}</div>
       <div style={{ ...styles.levelContainer, color: fontColor }}>{p.level?.toUpperCase()}</div>
       <div style={styles.messageContainer}>{renderMessage(p.message)}</div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -53,7 +98,23 @@ const useStyles = mkUseStyles((t) => ({
     width: '100%',
     maxWidth: '100%',
     alignItems: 'flex-start',
-    marginBottom: t.spacing.xs,
+    padding: 4,
+    zIndex: 1,
+    borderStyle: 'solid',
+    borderWidth: 1,
+    marginLeft: t.spacing.m,
+    borderRadius: t.borderRadius.default,
+  },
+  marker: {
+    height: '100%',
+    cursor: 'pointer',
+    overflow: 'hidden',
+    borderRadius: t.borderRadius.default,
+    zIndex: 1,
+    marginRight: t.spacing.s,
+    marginLeft: -14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scopeContainer: {
     paddingLeft: t.spacing.s,
